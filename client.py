@@ -14,7 +14,7 @@ def receive(socket_conn, nickname):
         try:
             message = socket_conn.recv(1024).decode('utf-8')
             if message == 'NICK':
-                socket.send(nickname.encode('utf-8'))
+                socket_conn.send(nickname.encode('utf-8'))
 
             else:
                 print(message)
@@ -27,8 +27,8 @@ def write(socket_conn,nickname):
         message = f"{nickname}: {input("")}"
         socket_conn.send(message.encode('utf-8'))
 
-receive_thread = threading.Thread(target=receive)
-receive_thread.start()
+# receive_thread = threading.Thread(target=receive)
+# receive_thread.start()
 
-write_thread =threading.Thread(target=write)
-write_thread.start()
+# write_thread =threading.Thread(target=write)
+# write_thread.start()
