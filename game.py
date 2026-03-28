@@ -49,6 +49,33 @@ class Ship():
         self.y = y
         self.h = 50 + (60 * (self.type-1))
         self.w = 50
+        self.counter = [4, 3, 2, 1]
+
+    def search_free_ship(self):
+        for item in self.counter:
+            if item > 0:
+                return self.counter.index(item)
+        #if nothing found
+        return -1
+
+    def ship_available(self):
+        if self.counter[self.type - 1] == 0:
+            print("Search for free ship")
+            temp = self.search_free_ship()
+            print(temp)
+            if temp > -1:
+                # put new type and update ship
+                self.type = temp + 1
+                self.update()
+            else:
+                print("terminate")
+        else:
+            print(f"You have {self.type, self.counter[self.type - 1]} ship")
+
+
+    def use_ship(self):
+        self.counter[self.type - 1] -= 1
+        self.ship_available()
 
     def draw(self, surface):
         pygame.draw.rect(surface, (0, 0, 0), (self.x, self.y, self.w, self.h))
@@ -59,10 +86,12 @@ class Ship():
     def move_horisontally(self, step):
         self.x += step
 
-    def rotate(self):
-        temp = self.h
-        self.h = self.w
-        self.w = temp
+    def rotate(self, x, y):
+        if x < (self.x + self.h)   < (x +600):
+            if y < (self.y+self.w) < (y + 600):
+                temp = self.h
+                self.h = self.w
+                self.w = temp
 
     def update(self):
         self.h = 50 + (60 * (self.type-1))
@@ -88,12 +117,51 @@ class Game_Map():
         # make enemy and player  zero lists 2d
         self.my_map_list = np.zeros((10, 10))
         self.enemy_map_list = np.zeros((10, 10))
-        
 
+    def free_cells(self):
+        pass
+
+    def print_my_matrix(self):
+        for y in range(10):
+            for x in range(10):
+                print(f"{self.my_map_list[y][x]}  ", end='')
+            print()
+
+    def safe_ship(self, row, column, height, width, type):
+        if height < width:
+            for temp in range(width):
+                self.my_map_list[row][column + temp] = type
+        elif height > width:
+            for temp in range(height):
+                self.my_map_list[row + temp][column] = type 
+        else:
+            self.my_map_list[row][column] = type
+
+        
+        
+    def put_ship_into_matrix(self, ship):
+        #works
+        # check ship pos
+        temp_x = int((ship.x - 205) / 60)
+        temp_y = int((ship.y - 205) / 60)
+        
+        temp_h = 1 if (ship.h - 50) == 0 else int((ship.h - 50)/60 + 1)
+        temp_w = 1 if (ship.w - 50) == 0 else int((ship.w - 50)/60 + 1)
+
+        self.safe_ship(temp_y, temp_x, temp_h, temp_w, ship.type)
+        
+        # - 1 ship and change size if needed
+        ship.use_ship()
+        print(ship.counter)
+
+        # self.print_my_matrix()
+
+        print(f"x : {temp_y} y : {temp_x} h : {temp_h} w : {temp_w}")
+        # put the vales into matrix 
+
+        pass
         
     def draw_map(self,x, y):
-
-        self.boundary_rect = pygame.Rect(x, y, 600, 600)
         temp_small_rect = pygame.Rect(x, y, 60, 60)
         #print outer box
         pygame.draw.rect(screen, (255,255,255), (x - 3 , y - 3, 607, 607), 5)
@@ -188,9 +256,12 @@ def game_menu():
                     if event.key == pygame.K_1:
                         active_ship.type = 1
                         active_ship.update()
+
+                    if event.key == pygame.K_k:
+                        game_map_obj.put_ship_into_matrix(active_ship)
                     #rotation
                     if event.key == pygame.K_r:
-                        active_ship.rotate()
+                        active_ship.rotate(200, 200)
 
     # print("Commited")
     # print(f"Your username will be : {text_input_object.text}")
