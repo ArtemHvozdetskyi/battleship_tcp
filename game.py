@@ -46,77 +46,126 @@ text_input_object = Text_Input(base_font)
 # ship class
 
 class Game():
-    pass
+    def __init__(self):
+        self.game_map = Game_Map()
+        self.available_ships = []
 
-class Ship():
-    def __init__(self, x, y, type):
-        self.type = type
-        self.x = x
-        self.y = y
-        self.h = 50 + (60 * (self.type-1))
-        self.w = 50
-        self.counter = [4, 3, 2, 1]
 
-    def search_free_ship(self):
-        for item in self.counter:
-            if item > 0:
-                return self.counter.index(item)
-        #if nothing found
-        return -1
+    def main_menu():
+        while True:
+            pygame.display.flip()
+            screen.fill((0, 0, 0))
+            screen.blit(base_font.render('Input your nickname', True, (255, 255, 255)), (740, 200))
+            text_input_object.draw(screen, 800 ,350 , pygame.event.get())
+            
+            if confirm_button.draw(screen, 870, 550):
+                game_menu()
 
-    def ship_available(self):
-        if self.counter[self.type - 1] == 0:
-            print("Search for free ship")
-            temp = self.search_free_ship()
-            print(temp)
-            if temp > -1:
-                # put new type and update ship
-                self.type = temp + 1
-                self.update()
-            else:
-                self.type = -1
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+
+
+    def wait_window():
+        temp_dot = '.'
+        while True:
+            for _ in range(3):
+                pygame.display.flip()
+                screen.fill((0, 0, 0))
+                
+                screen.blit(base_font.render(f'Waiting for opponent{temp_dot}', True, (255, 255, 255)), (740, 500))
+                temp_dot += '.'
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        exit()
+                sleep(1)
+            temp_dot  = '.'
+
+
+    def game_menu(self):
+        global connection
+        
+        
+        active_ship = Ship(205, 205, 1)
+        if connection == True:
+            wait_window()
         else:
-            print(f"You have {self.type, self.counter[self.type - 1]} ship")
+
+            while True:
+                
+                pygame.display.flip()
+                screen.fill((0,0, 255))
+                screen.blit(base_font.render(f"S: {active_ship.counter[0]}  M: {active_ship.counter[1]}  L: {active_ship.counter[2]}  G: {active_ship.counter[3]}", True, (255, 255, 255)), (50, 50))
+                self.game_map.draw_map(200, 200)
+                self.game_map.draw_map(1250, 200)
+                #draw saved ships on map
+                self.game_map.draw_ships_on_map(screen)
+                active_ship.draw(screen)
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        exit()
+                    
+                    if event.type == pygame.KEYDOWN:
+                        #quick leave
+                        if event.key == pygame.K_ESCAPE:
+                            pygame.quit()
+                            exit()
+                        #movement
+                        if event.key == pygame.K_UP or event.key == pygame.K_w:  
+                            if not active_ship.crosses_vertical_boundary(-60, 200, 800):
+                                active_ship.move_vertically(-60)
+                        if event.key == pygame.K_DOWN or event.key == pygame.K_s:  
+                            if not active_ship.crosses_vertical_boundary(60, 200, 800):
+                                active_ship.move_vertically(60)
+                        if event.key == pygame.K_LEFT or event.key == pygame.K_a:  
+                            if not active_ship.crosses_horizontal_boundary(-60, 200, 800):
+                                active_ship.move_horisontally(-60)
+                        if event.key == pygame.K_RIGHT or event.key == pygame.K_d:  
+                            if not active_ship.crosses_horizontal_boundary(60, 200, 800):
+                                active_ship.move_horisontally(60)
+                        # changing ship size
+                        if event.key == pygame.K_4:
+                            active_ship.type = 4
+                            active_ship.x = 205
+                            active_ship.y = 205
+                            active_ship.update()
+                        if event.key == pygame.K_3:
+                            active_ship.type = 3
+                            active_ship.x = 205
+                            active_ship.y = 205
+                            active_ship.update()
+                        if event.key == pygame.K_2:
+                            active_ship.type = 2
+                            active_ship.x = 205
+                            active_ship.y = 205
+                            active_ship.update()
+                        if event.key == pygame.K_1:
+                            active_ship.type = 1
+                            active_ship.x = 205
+                            active_ship.y = 205
+                            active_ship.update()
+
+                        if event.key == pygame.K_k:
+                            game_map_obj.put_ship_into_matrix(active_ship)
+                            game_map_obj.print_my_matrix()
+                            if active_ship.type == -1:
+                                #proceed to play or wait for another player
+                                pygame.quit()
+                                exit()
+                        #rotation
+                        if event.key == pygame.K_r:
+                            active_ship.rotate(200, 200)
+
+        # print("Commited")
+        # print(f"Your username will be : {text_input_object.text}")
+        # text_input_object.text = ''
 
 
-    def use_ship(self):
-        self.counter[self.type - 1] -= 1
-        self.ship_available()
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, (0, 0, 0), (self.x, self.y, self.w, self.h))
-
-    def move_vertically(self, step):
-        self.y += step
-
-    def move_horisontally(self, step):
-        self.x += step
-
-    def rotate(self, x, y):
-        if x < (self.x + self.h)   < (x +600):
-            if y < (self.y+self.w) < (y + 600):
-                temp = self.h
-                self.h = self.w
-                self.w = temp
-
-    def update(self):
-        self.h = 50 + (60 * (self.type-1))
-        self.w = 50 
-
-    def crosses_horizontal_boundary(self, step, boundary_left, boundary_right):
-        if boundary_left < (self.x+ self.w + step) < boundary_right:
-            return False
-        else:
-            return True
-
-    def crosses_vertical_boundary(self, step, boundary_top, boundary_bottom):
-        if boundary_top < (self.y + self.h + step) < boundary_bottom:
-            return False
-        else:
-            return True
-    def reset_ship(self):
-        self.counter = [4, 3, 2, 1]
-        self.type = 1
 
 
 
@@ -212,127 +261,86 @@ class Game_Map():
 
 
 
+class Ship():
+    def __init__(self, x, y, type):
+        self.type = type
+        self.x = x
+        self.y = y
+        self.h = 50 + (60 * (self.type-1))
+        self.w = 50
+        self.counter = [4, 3, 2, 1]
+        self.availabe = True
 
-def wait_window():
-    temp_dot = '.'
-    while True:
-        for _ in range(3):
-            pygame.display.flip()
-            screen.fill((0, 0, 0))
-            
-            screen.blit(base_font.render(f'Waiting for opponent{temp_dot}', True, (255, 255, 255)), (740, 500))
-            temp_dot += '.'
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-            sleep(1)
-        temp_dot  = '.'
+    def search_free_ship(self):
+        for item in self.counter:
+            if item > 0:
+                return self.counter.index(item)
+        #if nothing found
+        return -1
 
-
-
-def game_menu():
-    global connection
-    
-    
-    active_ship = Ship(205, 205, 1)
-    game_map_obj = Game_Map()
-    if connection == True:
-        wait_window()
-    else:
-
-        while True:
-            
-            pygame.display.flip()
-            screen.fill((0,0, 255))
-            screen.blit(base_font.render(f"S: {active_ship.counter[0]}  M: {active_ship.counter[1]}  L: {active_ship.counter[2]}  G: {active_ship.counter[3]}", True, (255, 255, 255)), (50, 50))
-            game_map_obj.draw_map(200, 200)
-            game_map_obj.draw_map(1250, 200)
-            #draw saved ships on map
-            game_map_obj.draw_ships_on_map(screen)
-            active_ship.draw(screen)
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-                
-                if event.type == pygame.KEYDOWN:
-                    #quick leave
-                    if event.key == pygame.K_ESCAPE:
-                        pygame.quit()
-                        exit()
-                    #movement
-                    if event.key == pygame.K_UP or event.key == pygame.K_w:  
-                        if not active_ship.crosses_vertical_boundary(-60, 200, 800):
-                            active_ship.move_vertically(-60)
-                    if event.key == pygame.K_DOWN or event.key == pygame.K_s:  
-                        if not active_ship.crosses_vertical_boundary(60, 200, 800):
-                            active_ship.move_vertically(60)
-                    if event.key == pygame.K_LEFT or event.key == pygame.K_a:  
-                        if not active_ship.crosses_horizontal_boundary(-60, 200, 800):
-                            active_ship.move_horisontally(-60)
-                    if event.key == pygame.K_RIGHT or event.key == pygame.K_d:  
-                        if not active_ship.crosses_horizontal_boundary(60, 200, 800):
-                            active_ship.move_horisontally(60)
-                    # changing ship size
-                    if event.key == pygame.K_4:
-                        active_ship.type = 4
-                        active_ship.x = 205
-                        active_ship.y = 205
-                        active_ship.update()
-                    if event.key == pygame.K_3:
-                        active_ship.type = 3
-                        active_ship.x = 205
-                        active_ship.y = 205
-                        active_ship.update()
-                    if event.key == pygame.K_2:
-                        active_ship.type = 2
-                        active_ship.x = 205
-                        active_ship.y = 205
-                        active_ship.update()
-                    if event.key == pygame.K_1:
-                        active_ship.type = 1
-                        active_ship.x = 205
-                        active_ship.y = 205
-                        active_ship.update()
-
-                    if event.key == pygame.K_k:
-                        game_map_obj.put_ship_into_matrix(active_ship)
-                        game_map_obj.print_my_matrix()
-                        if active_ship.type == -1:
-                            #proceed to play or wait for another player
-                            pygame.quit()
-                            exit()
-                    #rotation
-                    if event.key == pygame.K_r:
-                        active_ship.rotate(200, 200)
-
-    # print("Commited")
-    # print(f"Your username will be : {text_input_object.text}")
-    # text_input_object.text = ''
+    def ship_available(self):
+        if self.counter[self.type - 1] == 0:
+            print("Search for free ship")
+            temp = self.search_free_ship()
+            print(temp)
+            if temp > -1:
+                # put new type and update ship
+                self.type = temp + 1
+                self.update()
+            else:
+                self.type = -1
+        else:
+            print(f"You have {self.type, self.counter[self.type - 1]} ship")
 
 
-def main_menu():
-    while True:
-        pygame.display.flip()
-        screen.fill((0, 0, 0))
-        screen.blit(base_font.render('Input your nickname', True, (255, 255, 255)), (740, 200))
-        text_input_object.draw(screen, 800 ,350 , pygame.event.get())
-        
-        if confirm_button.draw(screen, 870, 550):
-            game_menu()
+    def use_ship(self):
+        self.counter[self.type - 1] -= 1
+        self.ship_available()
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, (0, 0, 0), (self.x, self.y, self.w, self.h))
+
+    def move_vertically(self, step):
+        self.y += step
+
+    def move_horisontally(self, step):
+        self.x += step
+
+    def rotate(self, x, y):
+        if x < (self.x + self.h)   < (x +600):
+            if y < (self.y+self.w) < (y + 600):
+                temp = self.h
+                self.h = self.w
+                self.w = temp
+
+    def update(self):
+        self.h = 50 + (60 * (self.type-1))
+        self.w = 50 
+
+    def crosses_horizontal_boundary(self, step, boundary_left, boundary_right):
+        if boundary_left < (self.x+ self.w + step) < boundary_right:
+            return False
+        else:
+            return True
+
+    def crosses_vertical_boundary(self, step, boundary_top, boundary_bottom):
+        if boundary_top < (self.y + self.h + step) < boundary_bottom:
+            return False
+        else:
+            return True
+    def reset_ship(self):
+        self.counter = [4, 3, 2, 1]
+        self.type = 1
 
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
+
+
 
 
 if __name__ == "__main__":
     # main_menu()
-    game_menu()
+    game = Game()
+    game.game_menu()
     
     # receive_thread = threading.Thread(target=receive, args=(socket_connection, text_input_object.text))
     # receive_thread.start()
