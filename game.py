@@ -27,11 +27,14 @@ PORT = 51000
 #game related stuff
 connection = False
 
+#Colors
+RGB_BLACK = (0, 0, 0)
+RGB_WHITE = (255, 255, 255)
 
 
 #pygame
 pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED)
 
 confirm_img = pygame.image.load('textures/right.png').convert_alpha()
 confirm_button = Button( confirm_img, 0.25)
@@ -41,6 +44,9 @@ text_input_object = Text_Input(base_font)
 #
 
 # ship class
+
+class Game():
+    pass
 
 class Ship():
     def __init__(self, x, y, type):
@@ -68,7 +74,7 @@ class Ship():
                 self.type = temp + 1
                 self.update()
             else:
-                print("terminate")
+                self.type = -1
         else:
             print(f"You have {self.type, self.counter[self.type - 1]} ship")
 
@@ -108,6 +114,10 @@ class Ship():
             return False
         else:
             return True
+    def reset_ship(self):
+        self.counter = [4, 3, 2, 1]
+        self.type = 1
+
 
 
 # game map class
@@ -137,7 +147,8 @@ class Game_Map():
         else:
             self.my_map_list[row][column] = type
 
-        
+    def draw_collision():
+        pass
         
     def put_ship_into_matrix(self, ship):
         #works
@@ -157,6 +168,8 @@ class Game_Map():
         # self.print_my_matrix()
 
         print(f"x : {temp_y} y : {temp_x} h : {temp_h} w : {temp_w}")
+        if(ship.type == -1):
+            print("terminate")
         # put the vales into matrix 
 
         pass
@@ -183,6 +196,21 @@ class Game_Map():
         for temp_x in range(10):
             for temp_y in range(10):
                 pygame.draw.rect(screen, (255,255,255), ( x + (60* temp_x ), y + (60 * temp_y), 60, 60), 1)
+            
+    def draw_ships_on_map(self,screen):
+        for i in range(10):
+            for y in range(10):
+                if self.my_map_list[i][y] != 0:
+                    pygame.draw.rect(screen, RGB_BLACK, ( 205+ (y * 60), 205 + (i * 60), 50, 50))
+
+
+
+    
+    def reset_map(self):
+        self.my_map_list = np.zeros((10, 10))
+        self.enemy_map_list = np.zeros((10, 10))
+
+
 
 
 def wait_window():
@@ -203,10 +231,10 @@ def wait_window():
 
 
 
-
-
 def game_menu():
     global connection
+    
+    
     active_ship = Ship(205, 205, 1)
     game_map_obj = Game_Map()
     if connection == True:
@@ -214,10 +242,14 @@ def game_menu():
     else:
 
         while True:
+            
             pygame.display.flip()
             screen.fill((0,0, 255))
+            screen.blit(base_font.render(f"S: {active_ship.counter[0]}  M: {active_ship.counter[1]}  L: {active_ship.counter[2]}  G: {active_ship.counter[3]}", True, (255, 255, 255)), (50, 50))
             game_map_obj.draw_map(200, 200)
             game_map_obj.draw_map(1250, 200)
+            #draw saved ships on map
+            game_map_obj.draw_ships_on_map(screen)
             active_ship.draw(screen)
 
             for event in pygame.event.get():
@@ -246,19 +278,32 @@ def game_menu():
                     # changing ship size
                     if event.key == pygame.K_4:
                         active_ship.type = 4
+                        active_ship.x = 205
+                        active_ship.y = 205
                         active_ship.update()
                     if event.key == pygame.K_3:
                         active_ship.type = 3
+                        active_ship.x = 205
+                        active_ship.y = 205
                         active_ship.update()
                     if event.key == pygame.K_2:
                         active_ship.type = 2
+                        active_ship.x = 205
+                        active_ship.y = 205
                         active_ship.update()
                     if event.key == pygame.K_1:
                         active_ship.type = 1
+                        active_ship.x = 205
+                        active_ship.y = 205
                         active_ship.update()
 
                     if event.key == pygame.K_k:
                         game_map_obj.put_ship_into_matrix(active_ship)
+                        game_map_obj.print_my_matrix()
+                        if active_ship.type == -1:
+                            #proceed to play or wait for another player
+                            pygame.quit()
+                            exit()
                     #rotation
                     if event.key == pygame.K_r:
                         active_ship.rotate(200, 200)
