@@ -25,7 +25,9 @@ PORT = 51000
 # socket_connection.connect((HOST, PORT))
 
 #game related stuff
-connection = False
+
+#change later connection to False
+connection = True
 
 #Colors
 RGB_BLACK = (0, 0, 0)
@@ -49,7 +51,14 @@ class Game():
     def __init__(self):
         self.game_map = Game_Map()
         self.available_ships = []
-
+        self.counter = [4, 3, 2, 1]
+        # initialization of ships into list
+        temp = 4
+        for ship_type in range(4):
+            for index in range(temp):
+                self.available_ships.append(Ship(x=205, y=205, type=ship_type + 1))
+                # print(ship_type+1)
+            temp -= 1
 
     def main_menu():
         while True:
@@ -57,52 +66,27 @@ class Game():
             screen.fill((0, 0, 0))
             screen.blit(base_font.render('Input your nickname', True, (255, 255, 255)), (740, 200))
             text_input_object.draw(screen, 800 ,350 , pygame.event.get())
-            
             if confirm_button.draw(screen, 870, 550):
                 game_menu()
-
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
 
 
-    def wait_window():
-        temp_dot = '.'
-        while True:
-            for _ in range(3):
-                pygame.display.flip()
-                screen.fill((0, 0, 0))
-                
-                screen.blit(base_font.render(f'Waiting for opponent{temp_dot}', True, (255, 255, 255)), (740, 500))
-                temp_dot += '.'
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        exit()
-                sleep(1)
-            temp_dot  = '.'
-
-
     def game_menu(self):
         global connection
-        
-        
-        active_ship = Ship(205, 205, 1)
+        active_ship = self.get_available_ship()
         if connection == True:
-            wait_window()
-        else:
-
             while True:
                 
                 pygame.display.flip()
                 screen.fill((0,0, 255))
-                screen.blit(base_font.render(f"S: {active_ship.counter[0]}  M: {active_ship.counter[1]}  L: {active_ship.counter[2]}  G: {active_ship.counter[3]}", True, (255, 255, 255)), (50, 50))
+                screen.blit(base_font.render(f"S: {self.counter[0]}  M: {self.counter[1]}  L: {self.counter[2]}  G: {self.counter[3]}", True, (255, 255, 255)), (50, 50))
                 self.game_map.draw_map(200, 200)
                 self.game_map.draw_map(1250, 200)
                 #draw saved ships on map
-                self.game_map.draw_ships_on_map(screen)
+                # self.game_map.draw_ships_on_map(screen)
                 active_ship.draw(screen)
 
                 for event in pygame.event.get():
@@ -164,8 +148,33 @@ class Game():
         # print("Commited")
         # print(f"Your username will be : {text_input_object.text}")
         # text_input_object.text = ''
+            
+        else:
+            wait_window()
 
 
+    def wait_window():
+        temp_dot = '.'
+        while True:
+            for _ in range(3):
+                pygame.display.flip()
+                screen.fill((0, 0, 0))
+                
+                screen.blit(base_font.render(f'Waiting for opponent{temp_dot}', True, (255, 255, 255)), (740, 500))
+                temp_dot += '.'
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        exit()
+                sleep(1)
+            temp_dot  = '.'
+
+    def get_available_ship(self):
+        for index in range(10):
+            if self.available_ships[index].available == True:
+                return self.available_ships[index]
+
+    
 
 
 
@@ -269,7 +278,7 @@ class Ship():
         self.h = 50 + (60 * (self.type-1))
         self.w = 50
         self.counter = [4, 3, 2, 1]
-        self.availabe = True
+        self.available = True
 
     def search_free_ship(self):
         for item in self.counter:
