@@ -82,6 +82,7 @@ class Game():
         
         if connection == True:
             self.place_ships_on_map()
+            print("We returned")
 
 
         # print("Commited")
@@ -95,6 +96,8 @@ class Game():
     def place_ships_on_map(self):
         active_ship = self.get_available_ship()
         while True:
+            #look for collisions and draw them
+            self.game_map.look_for_collisions(active_ship,screen)
             pygame.display.flip()
             screen.fill((0,0, 255))
             screen.blit(base_font.render("Ships available", True, RGB_WHITE), (830, 870))
@@ -181,36 +184,24 @@ class Game():
                             active_ship = self.get_available_ship()
                     #k confirm ship and save it
                     if event.key == pygame.K_k:
-                        #look for collisions
+                        if self.game_map.is_free_cells(active_ship):
 
+                            #save ship to matrix and output matrix
+                            self.game_map.put_ship_into_matrix(active_ship)
+                            # set status as unavailable in active ship
+                            active_ship.set_status(False)
+                            # decrease count via index in list 
+                            self.counter[active_ship.type - 1] -= 1
+                            #get new ship
+                            active_ship = self.get_available_ship()
+                            if active_ship == None:
+                                #proceed to play or wait for another player
+                                return
 
-                        #save ship to matrix and output matrix
-                        self.game_map.put_ship_into_matrix(active_ship)
-
-
-
-                        # set status as unavailable in active ship
-                        active_ship.set_status(False)
-                        # decrease count via index in list 
-                        self.counter[active_ship.type - 1] -= 1
                         
-                        
-
-                        #get new ship
-                        active_ship = self.get_available_ship()
-
-
-                        if active_ship == None:
-                            #proceed to play or wait for another player
-                            pygame.quit()
-                            exit()
                     #rotation
                     if event.key == pygame.K_r:
                         active_ship.rotate(200, 200)
-
-
-    
-
 
 
     def get_available_ship(self, type=0):
@@ -223,6 +214,7 @@ class Game():
                     return self.available_ships[index]
             else:
                 return None
+
 
     @classmethod
     def wait_window():
@@ -265,14 +257,67 @@ class Game_Map():
                 if self.my_map_list[i][y] != 0:
                     pygame.draw.rect(screen, RGB_BLACK, ( 205+ (y * 60), 205 + (i * 60), 50, 50))
 
-    def free_cells(self):
-        pass
+    def look_for_collisions(self, ship, screen):
+        collisions = []
+
+
+        temp_column = int((ship.x - 205) / 60)
+        temp_row = int((ship.y - 205) / 60)
+        
+        temp_h = 0 if (ship.h - 50) == 0 else int((ship.h - 50)/60 )
+        temp_w = 0 if (ship.w - 50) == 0 else int((ship.w - 50)/60 )
+
+        top_boundary = temp_row if (temp_row - 1) < 0 else temp_row - 1
+        bottom_boundary = (temp_row + temp_h) if (temp_row+ temp_h + 1) > 9 else (temp_row + temp_h + 1) 
+        
+        left_boundary = temp_column if (temp_column - 1) < 0 else temp_column - 1
+        right_boundary = (temp_column + temp_w) if (temp_column + temp_w + 1) > 9 else (temp_column + temp_w + 1)
+
+        for _row in range(top_boundary, bottom_boundary + 1):
+            for _column in range(left_boundary, right_boundary + 1):
+                if self.my_map_list[_row][_column] != 0:
+                    collisions.append([_row, _column])
+        #look and append collision
+
+        Game_Map.draw_collision(collisions, screen)
+
+
+
+
+    def is_free_cells(self, ship):
+        # define borders of searching zona
+        temp_column = int((ship.x - 205) / 60)
+        temp_row = int((ship.y - 205) / 60)
+        
+        temp_h = 0 if (ship.h - 50) == 0 else int((ship.h - 50)/60 )
+        temp_w = 0 if (ship.w - 50) == 0 else int((ship.w - 50)/60 )
+
+        top_boundary = temp_row if (temp_row - 1) < 0 else temp_row - 1
+        bottom_boundary = (temp_row + temp_h) if (temp_row+ temp_h + 1) > 9 else (temp_row + temp_h + 1) 
+        
+        left_boundary = temp_column if (temp_column - 1) < 0 else temp_column - 1
+        right_boundary = (temp_column + temp_w) if (temp_column + temp_w + 1) > 9 else (temp_column + temp_w + 1)
+
+        # print(f"r : {temp_row}, c : {temp_column}, h : {temp_h}, w : {temp_w}")
+        # print(f"t : {top_boundary}, b : {bottom_boundary}, l : {left_boundary}, r : {right_boundary}")
+
+        for _row in range(top_boundary, bottom_boundary + 1):
+            for _column in range(left_boundary, right_boundary + 1):
+                if self.my_map_list[_row][_column] != 0:
+                    return False
+
+        return True
 
     
 
-    
-    def draw_collision():
-        pass
+    @staticmethod
+    def draw_collision(collisions_list, screen):
+        for coordinates in collisions_list:
+            temp_x = 210 + (coordinates[0]* 60)
+            temp_y = 215 + (coordinates[1]* 60)
+            screen.blit(base_font.render("X", True, RGB_RED), (temp_y, temp_x))
+
+
         
     def put_ship_into_matrix(self, ship):
         #works
@@ -285,7 +330,7 @@ class Game_Map():
 
         self.safe_ship(temp_ship_row, temp_ship_column, temp_h, temp_w, ship.type)
 
-        self.print_my_matrix()
+        # self.print_my_matrix()
         # put the vales into matrix 
 
 
@@ -299,13 +344,7 @@ class Game_Map():
         else:
             self.my_map_list[row][column] = type
 
-    def look_for_collisions(self, ship):
-        temp_column = int((ship.x - 205) / 60)
-        temp_row = int((ship.y - 205) / 60)
-        
-        temp_h = 1 if (ship.h - 50) == 0 else int((ship.h - 50)/60 + 1)
-        temp_w = 1 if (ship.w - 50) == 0 else int((ship.w - 50)/60 + 1)
-
+    
 
 
     def print_my_matrix(self):
@@ -442,39 +481,6 @@ class Ship():
 
     def draw(self, surface):
         pygame.draw.rect(surface, (0, 0, 0), (self.x, self.y, self.w, self.h))
-
-    
-    
-    # def search_free_ship(self):
-    #     for item in self.counter:
-    #         if item > 0:
-    #             return self.counter.index(item)
-    #     #if nothing found
-    #     return -1
-
-    # def ship_available(self):
-    #     if self.counter[self.type - 1] == 0:
-    #         print("Search for free ship")
-    #         temp = self.search_free_ship()
-    #         print(temp)
-    #         if temp > -1:
-    #             # put new type and update ship
-    #             self.type = temp + 1
-    #             self.update()
-    #         else:
-    #             self.type = -1
-    #     else:
-    #         print(f"You have {self.type, self.counter[self.type - 1]} ship")
-
-
-    # def use_ship(self):
-    #     self.counter[self.type - 1] -= 1
-    #     self.ship_available()
-
-    
-
-
-
 
 
 if __name__ == "__main__":
