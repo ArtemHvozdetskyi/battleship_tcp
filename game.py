@@ -33,6 +33,7 @@ connection = True
 RGB_BLACK = (0, 0, 0)
 RGB_WHITE = (255, 255, 255)
 RGB_RED = (255, 0, 0)
+RGB_GRAY = (128, 128, 128)
 
 
 #pygame
@@ -82,7 +83,7 @@ class Game():
         
         if connection == True:
             self.place_ships_on_map()
-            print("We returned")
+            # commit 
 
 
         # print("Commited")
@@ -94,6 +95,7 @@ class Game():
 
 
     def place_ships_on_map(self):
+        help_window = False
         active_ship = self.get_available_ship()
         while True:
             #look for collisions and draw them
@@ -112,11 +114,16 @@ class Game():
                 else:
                     self.game_map.blit_message(screen)
 
+
                 
                 
             #draw saved ships on map
-            self.game_map.draw_ships_on_map(screen)
+            self.game_map.draw_ships_on_map(screen, self.available_ships)
             active_ship.draw(screen)
+
+            if help_window == True:
+                Game.help_placement_window(screen)
+                
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -145,6 +152,8 @@ class Game():
                         if not Game_Map.crosses_right_boundary(active_ship.x, active_ship.w, 60, 800):
                             active_ship.move_horisontally(60)
 
+                    if event.key == pygame.K_r:
+                        active_ship.rotate(200, 200)
                     # changing ship size
                     if event.key == pygame.K_4:
                         active_ship = self.get_available_ship(4)
@@ -155,6 +164,7 @@ class Game():
                         else:
                             self.game_map.error_message = "Ship is unavailable"
                             active_ship = self.get_available_ship()
+
                     if event.key == pygame.K_3:
                         active_ship = self.get_available_ship(3)
                         if active_ship != None:
@@ -164,6 +174,7 @@ class Game():
                         else:
                             self.game_map.error_message = "Ship is unavailable"
                             active_ship = self.get_available_ship()
+                            
                     if event.key == pygame.K_2:
                         active_ship = self.get_available_ship(2)
                         if active_ship != None:
@@ -173,6 +184,7 @@ class Game():
                         else:
                             self.game_map.error_message = "Ship is unavailable"
                             active_ship = self.get_available_ship()
+
                     if event.key == pygame.K_1:
                         active_ship = self.get_available_ship(1)
                         if active_ship != None:
@@ -182,27 +194,29 @@ class Game():
                         else:
                             self.game_map.error_message = "Ship is unavailable"
                             active_ship = self.get_available_ship()
-                    #k confirm ship and save it
+
+                    #reset
+                    if event.key == pygame.K_n:
+                        for index in range(10):
+                            self.available_ships[index].set_status(True)
+                        self.game_map.reset_map()
+                        self.counter = [4, 3, 2, 1]
+                    #confirm
                     if event.key == pygame.K_k:
                         if self.game_map.is_free_cells(active_ship):
-
-                            #save ship to matrix and output matrix
                             self.game_map.put_ship_into_matrix(active_ship)
-                            # set status as unavailable in active ship
                             active_ship.set_status(False)
-                            # decrease count via index in list 
                             self.counter[active_ship.type - 1] -= 1
-                            #get new ship
                             active_ship = self.get_available_ship()
                             if active_ship == None:
-                                #proceed to play or wait for another player
+                                # successfully placed ships
                                 return
-
+                            
+                    # help
+                    if event.key == pygame.K_h:
+                        help_window = False if help_window == True else True
                         
-                    #rotation
-                    if event.key == pygame.K_r:
-                        active_ship.rotate(200, 200)
-
+                        #output a gray window
 
     def get_available_ship(self, type=0):
         for index in range(10):
@@ -233,6 +247,19 @@ class Game():
                 sleep(1)
             temp_dot  = '.'
 
+    @staticmethod
+    def  help_placement_window(screen):
+        pygame.draw.rect(screen, RGB_GRAY, (320, 180, 1280, 720))
+        # contents
+        #movement
+        screen.blit(base_font.render("w/a/s/d or arrays - move up/left/down/right ship",True, RGB_WHITE), (450, 300))
+        screen.blit(base_font.render("r - rotare ship",True, RGB_WHITE), (450, 350))
+        screen.blit(base_font.render("k - save position of ship",True, RGB_WHITE), (450, 400))
+        screen.blit(base_font.render("n - reset map",True, RGB_WHITE), (450, 450))
+        screen.blit(base_font.render("press 'h' to close this window",True, RGB_WHITE), (450, 800))
+
+
+
 
 # game map class
 
@@ -251,11 +278,13 @@ class Game_Map():
     def blit_message(self, screen):
         screen.blit(base_font.render(self.error_message, True, RGB_RED), (800, 100))
 
-    def draw_ships_on_map(self,screen):
-        for i in range(10):
-            for y in range(10):
-                if self.my_map_list[i][y] != 0:
-                    pygame.draw.rect(screen, RGB_BLACK, ( 205+ (y * 60), 205 + (i * 60), 50, 50))
+    def draw_ships_on_map(self,screen, ships_list):
+        for indx in range(10):
+            if ships_list[indx].available == False:
+                ships_list[indx].draw(screen)
+            
+
+
 
     def look_for_collisions(self, ship, screen):
         collisions = []
