@@ -103,6 +103,7 @@ class Game():
             pygame.display.flip()
             screen.fill((0,0, 255))
             screen.blit(base_font.render("Ships available", True, RGB_WHITE), (830, 870))
+            screen.blit(base_font.render("Help : press 'h'", True, (211, 211, 211)), (1350, 950))
             screen.blit(base_font.render(f"S: {self.counter[0]}  M: {self.counter[1]}  L: {self.counter[2]}  G: {self.counter[3]}", True, (255, 255, 255)), (800, 950))
             #
             Game_Map.draw_map(200, 200)
