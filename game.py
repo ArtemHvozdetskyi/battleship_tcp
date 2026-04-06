@@ -11,7 +11,8 @@ import sys
 import threading
 import socket
 
-
+#fps 22
+clock = pygame.time.Clock()
 
 #screen stuff
 SCREEN_WIDTH = 1920
@@ -34,6 +35,11 @@ RGB_BLACK = (0, 0, 0)
 RGB_WHITE = (255, 255, 255)
 RGB_RED = (255, 0, 0)
 RGB_GRAY = (128, 128, 128)
+#ship colors
+RGB_1_GRAY = (217, 217, 217) 
+RGB_2_GRAY = (154, 154, 154)
+RGB_3_GRAY = (99, 99, 99)
+RGB_4_GRAY = (45, 45, 45)
 
 
 #pygame
@@ -57,9 +63,10 @@ class Game():
         # initialization of ships into list
         temp_count = 4
         temp_index = 0
+        ships_color = [RGB_1_GRAY, RGB_2_GRAY, RGB_3_GRAY, RGB_4_GRAY]
         for ship_type in range(4):
             for index in range(temp_count):
-                self.available_ships.append(Ship(x=205, y=205, type=ship_type + 1))
+                self.available_ships.append(Ship(x=205, y=205, type=ship_type + 1,color=ships_color[ship_type]))
                 temp_index += 1
             temp_count -= 1
 
@@ -75,6 +82,7 @@ class Game():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
+            clock.tick(22)
 
 
     def main_game_window(self):
@@ -108,14 +116,13 @@ class Game():
             #
             Game_Map.draw_map(200, 200)
             Game_Map.draw_map(1250, 200)
+            #show error message
             if self.game_map.error_message != '':
                 t = int(time.process_time()) % 4
                 if t == 3:
                     self.game_map.error_message = ''
                 else:
                     self.game_map.blit_message(screen)
-
-
                 
                 
             #draw saved ships on map
@@ -218,6 +225,7 @@ class Game():
                         help_window = False if help_window == True else True
                         
                         #output a gray window
+            clock.tick(22)
 
     def get_available_ship(self, type=0):
         for index in range(10):
@@ -247,6 +255,7 @@ class Game():
                         exit()
                 sleep(1)
             temp_dot  = '.'
+            clock.tick(22)
 
     @staticmethod
     def  help_placement_window(screen):
@@ -254,9 +263,10 @@ class Game():
         # contents
         #movement
         screen.blit(base_font.render("w/a/s/d or arrays - move up/left/down/right ship",True, RGB_WHITE), (450, 300))
-        screen.blit(base_font.render("r - rotare ship",True, RGB_WHITE), (450, 350))
-        screen.blit(base_font.render("k - save position of ship",True, RGB_WHITE), (450, 400))
-        screen.blit(base_font.render("n - reset map",True, RGB_WHITE), (450, 450))
+        screen.blit(base_font.render("1/2/3/4 - change type of ship",True, RGB_WHITE), (450, 350))
+        screen.blit(base_font.render("r - rotare ship",True, RGB_WHITE), (450, 400))
+        screen.blit(base_font.render("k - save position of ship",True, RGB_WHITE), (450, 450))
+        screen.blit(base_font.render("n - reset map",True, RGB_WHITE), (450, 500))
         screen.blit(base_font.render("press 'h' to close this window",True, RGB_WHITE), (450, 800))
 
 
@@ -441,13 +451,14 @@ class Game_Map():
 
 
 class Ship():
-    def __init__(self, x, y, type):
+    def __init__(self, x, y, type, color):
         self.type = type
         self._x = x
         self._y = y
         self._h = 50 + (60 * (self.type-1))
         self._w = 50
         self._available = True
+        self._color = color
 
     @property
     def x(self):
@@ -468,6 +479,10 @@ class Ship():
     @property
     def available(self):
         return self._available
+
+    @property
+    def color(self):
+        return self._color
     
     @x.setter
     def x(self, value):
@@ -488,6 +503,10 @@ class Ship():
     @available.setter
     def available(self, value):
         self._available = value
+
+    @color.setter
+    def color(self, value):
+        self._color = value
 
     def set_status(self, status):
         self._available = status
@@ -510,7 +529,7 @@ class Ship():
         self.w = 50 
 
     def draw(self, surface):
-        pygame.draw.rect(surface, (0, 0, 0), (self.x, self.y, self.w, self.h))
+        pygame.draw.rect(surface, self._color, (self.x, self.y, self.w, self.h))
 
 
 if __name__ == "__main__":
