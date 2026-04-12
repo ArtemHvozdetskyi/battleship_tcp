@@ -3,8 +3,10 @@ import numpy as np
 #my own classes
 from button import Button
 from text_input import Text_Input
-from client import receive, write
 import time
+from time import sleep
+
+from server_client import Client
 #
 import sys
 #server stuff
@@ -17,21 +19,20 @@ import socket
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 
-#server connection
 
-PORT = 51005
-socket_connection = None
 
 #game related stuff
 
 #change later connection to False
-connection = True
+# connection = True
 
 #Colors
 RGB_BLACK = (0, 0, 0)
 RGB_WHITE = (255, 255, 255)
 RGB_RED = (255, 0, 0)
+RGB_GREEN = (0, 255, 0)
 RGB_GRAY = (128, 128, 128)
+
 RGB_1_GRAY = (217, 217, 217) 
 RGB_2_GRAY = (154, 154, 154)
 RGB_3_GRAY = (99, 99, 99)
@@ -40,6 +41,20 @@ RGB_4_GRAY = (45, 45, 45)
 #miss or hit
 ATTACK = 9
 MISS = 99
+HIT = 111
+
+TEMP_SUBMIT_MAP = [
+    [1, 0, 2, 0, 3, 0, 0, 0, 0, 0],
+    [0, 0, 2, 0, 3, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 3, 0, 0, 0, 0, 0],
+    [0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 2, 0, 4, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 4, 0, 0, 0, 0, 0],
+    [1, 0, 3, 0, 4, 0, 0, 0, 0, 0],
+    [0, 0, 3, 0, 4, 0, 0, 0, 0, 0],
+    [2, 0, 3, 0, 0, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+]
 
 
 #pygame
@@ -60,10 +75,14 @@ clock = pygame.time.Clock()
 
 class Game():
     def __init__(self):
+        #making client to connect to server
+        self.client = Client()
+
         self.game_map = Game_Map()
         self.available_ships = []
         self.counter = [4, 3, 2, 1]
         self._client_name = ''
+        self._enemy_name = ''
         # initialization of ships into list
         temp_count = 4
         temp_index = 0
@@ -82,11 +101,43 @@ class Game():
     def client_name(self, value):
         self._client_name = value
 
+    @property
+    def enemy_name(self):
+        return self._enemy_name
+
+    @enemy_name.setter
+    def enemy_name(self, value):
+        self._enemy_name = value
+
+    
+
+    def blit_status_bar(self):
+        self.blit_names()
+        screen.blit(base_font.render('Turn',True, RGB_WHITE), (965,130))
+        self.blit_attack_turn()
+
+
+
+    def blit_attack_turn(self):
+        if self.client.client_turn:
+            #blit two circles
+            pygame.draw.circle(screen, RGB_GRAY, (900, 150), 15)
+            pygame.draw.circle(screen, RGB_GRAY, (1150, 150), 15)
+            pygame.draw.circle(screen, RGB_RED, (900, 150), 10)
+        else:
+            pygame.draw.circle(screen, RGB_GRAY, (900, 150), 15)
+            pygame.draw.circle(screen, RGB_GRAY, (1150, 150), 15)
+            pygame.draw.circle(screen, RGB_RED, (1150, 150), 10)
+
+    def blit_names(self):
+        screen.blit(base_font.render(f"You: {self._client_name}", True, RGB_BLACK), (350, 100))
+        screen.blit(base_font.render(f"Enemy: {self._enemy_name}", True, RGB_BLACK), (1400, 100))
 
     def start_window(self):
         while True:
             pygame.display.flip()
             screen.fill((0, 0, 0))
+            
             screen.blit(base_font.render('Input server ip', True, (255, 255, 255)), (740, 150))
             #print ip input
             if ip_input_object.hovered_mouse():
@@ -107,13 +158,23 @@ class Game():
                 nickname_input_object.draw(screen, 800 ,500)
 
             if confirm_button.draw(screen, 870, 700):
+
+
+
                 # connect to server and send pass and
                 # host = ip_input_object.text
-                host = '127.0.1.1'
-                password = password_input__object.text
+                server_ip= '127.0.1.1'
+
+
+
+                server_password = password_input__object.text
                 nickname = nickname_input_object.text
-                self._connect_to_server(host, password, nickname)
-                self.main_game_window()
+                self._client_name = 'eshesh'
+                # self._client_name = nickname
+                # self.client.connect_to_server(server_ip, server_password, nickname)
+                self.client.connect_to_server(server_ip, 'gg', 'eshesh')
+                time.sleep(1)
+                self.main_game_loop()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -125,39 +186,37 @@ class Game():
             #fps
             clock.tick(22)
 
-    #private method
-    def _connect_to_server(self, server_ip, password, nickname):
-        global socket_connection
-        socket_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        socket_connection.connect((server_ip, PORT))
-        # send start data
-        socket_connection.send(password.encode('utf-8'))
-        socket_connection.send(nickname.encode('utf-8'))
 
+    def main_game_loop(self):
+        #should we wait or not
+        while True:
+            #old
+            # if not self.client.client_waiting:
+            #     print("placing ships")
+                # self.place_ships_on_map()
+            #     # time.sleep(1)
+            #     #send ships to server
+            #     #check if we should wait 
+            #     #if everythin is ok then play
+            #     while True:
+            #         if not self.client.client_waiting:
+            #             print("play game")
+            #             self.play_game()
+            #         else:
+            #             self.wait_window("Waiting for antother player")
 
+                
+            
+            # else:
+            #     self.wait_window("Waiting for another player to connect")
 
-    def main_game_window(self):
-        # placing ships
-        global connection
-        
-        if connection == True:
+            #new test
             self.place_ships_on_map()
-
-
-
             self.play_game()
 
 
-
-        # print("Commited")
-        # print(f"Your username will be : {text_input_object.text}")
-        # text_input_object.text = ''
-            
-        else:
-            wait_window()
-
-
     def place_ships_on_map(self):
+        print(self.client.enemy_name)
         help_window = False
         active_ship = self.get_available_ship()
         while True:
@@ -173,11 +232,13 @@ class Game():
             Game_Map.draw_map(200, 200)
             Game_Map.draw_map(1250, 200)
             if self.game_map.error_message != '':
+                start = time.clock()
                 t = int(time.process_time()) % 4
                 if t == 3:
                     self.game_map.error_message = ''
+
                 else:
-                    self.game_map.blit_message(screen)
+                    self.game_map.blit_message(screen, (100, 100))
 
 
                 
@@ -268,14 +329,27 @@ class Game():
                         self.counter = [4, 3, 2, 1]
                     #confirm
                     if event.key == pygame.K_k:
-                        if self.game_map.is_free_cells(active_ship):
-                            self.game_map.put_ship_into_matrix(active_ship)
-                            active_ship.set_status(False)
-                            self.counter[active_ship.ship_type - 1] -= 1
-                            active_ship = self.get_available_ship()
-                            if active_ship == None:
-                                # successfully placed ships
-                                return
+                        client_map = TEMP_SUBMIT_MAP
+                        self.client.send_client_map(client_map)
+                        time.sleep(1)
+
+
+                        #uncomend
+
+                        # if self.game_map.is_free_cells(active_ship):
+                        #     self.game_map.put_ship_into_matrix(active_ship)
+                        #     active_ship.set_status(False)
+                        #     self.counter[active_ship.ship_type - 1] -= 1
+                        #     active_ship = self.get_available_ship()
+                        #     if active_ship == None:
+                        #         # successfully placed ships
+                        #         print("now send to server")
+                        #         print(self.game_map.my_map_list)
+                        #         client_map = self.game_map.my_map_list
+                        #         self.client.send_client_map(client_map)
+                        #         sleep(1)
+                        #         #set ready to true
+                        return
                             
                     # help
                     if event.key == pygame.K_h:
@@ -298,6 +372,8 @@ class Game():
 
     def play_game(self):
         # standart output map etc...
+        self.enemy_name = self.client.enemy_name
+        print(self.enemy_name)
         attack_point = Point(1265, 210)
         while True:
             pygame.display.flip()
@@ -305,8 +381,15 @@ class Game():
             Game_Map.draw_map(200, 200)
             Game_Map.draw_map(1250, 200)
             self.game_map.draw_ships_on_map(screen, self.available_ships)
-
+            self.game_map.draw_attacks_on_map(screen)
+            #blit status bar with nicknames
+            self.blit_status_bar()
+            #errors
+            if self.game_map.error_message != '':
+                self.game_map.blit_message(screen, (720, 950))
+            #draw attck poijnt
             attack_point.draw(screen)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -324,42 +407,56 @@ class Game():
                             attack_point.move_vertically(60)
 
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:  
-                        # if not Game_Map.crosses_left_boundary(active_ship.x, -60, 200):
+                        if not Game_Map.crosses_left_boundary(attack_point.x, -60, 1250):
                             attack_point.move_horisontally(-60)
 
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:  
-                        # if not Game_Map.crosses_right_boundary(active_ship.x, active_ship.w, 60, 800):
+                        if not Game_Map.crosses_right_boundary(attack_point.x, 1, 60, 1850):
                             attack_point.move_horisontally(60)
                     if event.key == pygame.K_k:
-                        self.attack(attack_point)
+                        if self.client.client_turn:
+                            self.attack(attack_point)
+                        else:
+                            self.game_map.set_message('Waiting for opponent attack')
+                            
+            #fps
+            clock.tick(22)
 
 
 
 
     #attack func
     def attack(self, point):
-        self.game_map.put_attack_into_matrix(point)
+        res = self.game_map.put_attack_into_matrix(point)
         #save attack point to map
-        self.game_map.print_enemy()
-        #sent it to server
+        if res:
+            self.game_map.print_attack_list()
+            self.client.send_attack(self.game_map.attack_map_list, self.game_map.attack_row, self.game_map.attack_column)
+            self.game_map.error_message = ''
+        else:
+            self.game_map.set_message("You cant attack same positions")
 
-    @staticmethod
-    def wait_window():
+
+    #wait window
+    def wait_window(self, message):
         temp_dot = '.'
         while True:
-            for _ in range(3):
-                pygame.display.flip()
-                screen.fill((0, 0, 0))
-                
-                screen.blit(base_font.render(f'Waiting for opponent{temp_dot}', True, (255, 255, 255)), (740, 500))
-                temp_dot += '.'
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        exit()
-                sleep(1)
-            temp_dot  = '.'
-            clock.tick()
+            if self.client.client_waiting:
+                for _ in range(3):
+                    pygame.display.flip()
+                    screen.fill((0, 0, 0))
+                    
+                    screen.blit(base_font.render(message+temp_dot, True, (255, 255, 255)), (740, 500))
+                    temp_dot += '.'
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            exit()
+                    sleep(1)
+                temp_dot  = '.'
+                clock.tick()
+            else:
+                break
 
     @staticmethod
     def  help_placement_window(screen):
@@ -383,22 +480,41 @@ class Game_Map():
     #main methods
     def __init__(self):
         # make enemy and player  zero lists 2d
-        self.my_map_list = np.zeros((10, 10))
-        self.enemy_map_list = np.zeros((10, 10))
+        self.my_map_list = [ [0]*10 for i in range(10) ]
+        self.attack_map_list = [ [0]*10 for i in range(10) ]
+        self.attack_row = -1
+        self.attack_column = -1
         self.error_message = ''
-
     
     def reset_map(self):
-        self.my_map_list = np.zeros((10, 10))
-        self.enemy_map_list = np.zeros((10, 10))
+        self.my_map_list = [ [0]*10 for i in range(10) ]
+        self.attack_map_list = [ [0]*10 for i in range(10) ]
     
-    def blit_message(self, screen):
-        screen.blit(base_font.render(self.error_message, True, RGB_RED), (800, 100))
+    def set_message(self, message):
+        self.error_message = message
+
+    def blit_message(self, screen, pos):
+        screen.blit(base_font.render(self.error_message, True, RGB_RED), pos)
 
     def draw_ships_on_map(self,screen, ships_list):
         for indx in range(10):
             if ships_list[indx].available == False:
                 ships_list[indx].draw(screen)
+
+    #add  3 args x y for map placement
+    #and the map itself/ in order to draw attacks on both maps
+    def draw_attacks_on_map(self, screen):
+        for row in range(10):
+            for column in range(10):
+                if self.attack_map_list[row][column] == HIT:
+                    temp_x =  1265 + column * 60
+                    temp_y = 210 + row * 60
+                    screen.blit(base_font.render("X", True, RGB_GREEN), (temp_x, temp_y))
+                elif self.attack_map_list[row][column] == MISS:
+                    temp_x =  1265 + column * 60
+                    temp_y = 210 + row * 60
+                    screen.blit(base_font.render("X", True, RGB_RED), (temp_x, temp_y))
+
 
     def look_for_collisions(self, ship, screen):
         collisions = []
@@ -465,21 +581,28 @@ class Game_Map():
         else:
             self.my_map_list[row][column] = type
 
+    #attack methods
     def put_attack_into_matrix(self, attack_point):
         temp_attack_column = int((attack_point.x - 1265) / 60)
         temp_attack_row = int((attack_point.y - 210) / 60)
+        self.attack_row = temp_attack_row
+        self.attack_column = temp_attack_column
+        if self.attack_map_list[temp_attack_row][temp_attack_column] == 0:
+            print(f"row : {temp_attack_row} column : {temp_attack_column}" )
+            self.save_attack(temp_attack_row, temp_attack_column)
+            print("success")
+            return True
+        else:
+            return False
 
-
-        print(f"row : {temp_attack_row} column : {temp_attack_column}" )
-        self.save_attack(temp_attack_row, temp_attack_column)
-
+    
     def save_attack(self, row, column):
-        self.enemy_map_list[row][column] = ATTACK
+        self.attack_map_list[row][column] = ATTACK
 
-    def print_enemy(self):
+    def print_attack_list(self):
         for x in range(10):
             for y in range(10):
-                print(self.enemy_map_list[x][y] , end=' ')
+                print(self.attack_map_list[x][y] , end=' ')
             print()
 
     @classmethod
@@ -670,10 +793,3 @@ if __name__ == "__main__":
     game = Game()
     game.start_window()
     
-    # receive_thread = threading.Thread(target=receive, args=(socket_connection, text_input_object.text))
-    # receive_thread.start()
-
-    # write_thread =threading.Thread(target=write, args=(socket_connection, text_input_object.text))
-    # write_thread.start()
-    # prnt_thread = threading.Thread(target=printfff)
-    # prnt_thread.start()
