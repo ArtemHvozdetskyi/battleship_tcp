@@ -16,7 +16,7 @@ class Client():
         self.enemy_name = ''
 
         #maps
-        self.client_map = []
+        self.client_map = None
         self.attack_map = []
 
         #all data in this var
@@ -80,14 +80,15 @@ class Client():
         self.client_turn = client_data['client_turn']
         self.enemy_name = client_data['enemy']
         #maps
-        self.my_map = client_data['client_map']
+        self.client_map = client_data['client_map']
         self.attack_map =  client_data['attack_map']
+        # self.print_map()
 
     def print_map(self):
         print('printing map')
         for row in range(10):
             for column in range(10):
-                print(self.my_map[row][column], end = '  ')
+                print(self.client_map[row][column], end = '  ')
             print()
 
 

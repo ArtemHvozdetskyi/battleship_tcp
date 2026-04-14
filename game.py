@@ -169,10 +169,10 @@ class Game():
 
                 server_password = password_input__object.text
                 nickname = nickname_input_object.text
-                self._client_name = 'eshesh'
-                # self._client_name = nickname
-                # self.client.connect_to_server(server_ip, server_password, nickname)
-                self.client.connect_to_server(server_ip, 'gg', 'eshesh')
+                # self._client_name = 'eshesh'
+                self._client_name = nickname
+                self.client.connect_to_server(server_ip, server_password, nickname)
+                # self.client.connect_to_server(server_ip, 'gg', 'eshesh')
                 time.sleep(1)
                 self.main_game_loop()
             for event in pygame.event.get():
@@ -191,28 +191,28 @@ class Game():
         #should we wait or not
         while True:
             #old
-            # if not self.client.client_waiting:
-            #     print("placing ships")
-                # self.place_ships_on_map()
-            #     # time.sleep(1)
-            #     #send ships to server
-            #     #check if we should wait 
-            #     #if everythin is ok then play
-            #     while True:
-            #         if not self.client.client_waiting:
-            #             print("play game")
-            #             self.play_game()
-            #         else:
-            #             self.wait_window("Waiting for antother player")
+            if not self.client.client_waiting:
+                print("placing ships")
+                self.place_ships_on_map()
+                # time.sleep(1)
+                #send ships to server
+                #check if we should wait 
+                #if everythin is ok then play
+                while True:
+                    if not self.client.client_waiting:
+                        print("play game")
+                        self.play_game()
+                    else:
+                        self.wait_window("Waiting for antother player")
 
                 
             
-            # else:
-            #     self.wait_window("Waiting for another player to connect")
+            else:
+                self.wait_window("Waiting for another player to connect")
 
             #new test
-            self.place_ships_on_map()
-            self.play_game()
+            # self.place_ships_on_map()
+            # self.play_game()
 
 
     def place_ships_on_map(self):
@@ -329,27 +329,27 @@ class Game():
                         self.counter = [4, 3, 2, 1]
                     #confirm
                     if event.key == pygame.K_k:
-                        client_map = TEMP_SUBMIT_MAP
-                        self.client.send_client_map(client_map)
-                        time.sleep(1)
+                        # client_map = TEMP_SUBMIT_MAP
+                        # self.client.send_client_map(client_map)
+                        # time.sleep(1)
 
 
                         #uncomend
 
-                        # if self.game_map.is_free_cells(active_ship):
-                        #     self.game_map.put_ship_into_matrix(active_ship)
-                        #     active_ship.set_status(False)
-                        #     self.counter[active_ship.ship_type - 1] -= 1
-                        #     active_ship = self.get_available_ship()
-                        #     if active_ship == None:
-                        #         # successfully placed ships
-                        #         print("now send to server")
-                        #         print(self.game_map.my_map_list)
-                        #         client_map = self.game_map.my_map_list
-                        #         self.client.send_client_map(client_map)
-                        #         sleep(1)
+                        if self.game_map.is_free_cells(active_ship):
+                            self.game_map.put_ship_into_matrix(active_ship)
+                            active_ship.set_status(False)
+                            self.counter[active_ship.ship_type - 1] -= 1
+                            active_ship = self.get_available_ship()
+                            if active_ship == None:
+                                # successfully placed ships
+                                print("now send to server")
+                                print(self.game_map.my_map_list)
+                                client_map = self.game_map.my_map_list
+                                self.client.send_client_map(client_map)
+                                sleep(1)
+                                return
                         #         #set ready to true
-                        return
                             
                     # help
                     if event.key == pygame.K_h:
@@ -381,8 +381,12 @@ class Game():
             Game_Map.draw_map(200, 200)
             Game_Map.draw_map(1250, 200)
             self.game_map.draw_ships_on_map(screen, self.available_ships)
-            self.game_map.draw_attacks_on_map(screen)
-            #blit status bar with nicknames
+            self.game_map.set_my_map(self.client.client_map)
+
+            #drawing xes on map
+            self.game_map.draw_attacks_client_map(screen, 210, 215, self.game_map.my_map_list)
+            self.game_map.draw_attacks_attack_map(screen, 210, 1265, self.game_map.attack_map_list)
+            #blit status bar with nicknames``
             self.blit_status_bar()
             #errors
             if self.game_map.error_message != '':
@@ -433,6 +437,8 @@ class Game():
             self.game_map.print_attack_list()
             self.client.send_attack(self.game_map.attack_map_list, self.game_map.attack_row, self.game_map.attack_column)
             self.game_map.error_message = ''
+            time.sleep(0.5)
+            self.game_map.attack_map_list = self.client.attack_map
         else:
             self.game_map.set_message("You cant attack same positions")
 
@@ -501,19 +507,35 @@ class Game_Map():
             if ships_list[indx].available == False:
                 ships_list[indx].draw(screen)
 
+    def set_my_map(self, new_my_map):
+        if new_my_map != None:
+            self.my_map_list = new_my_map
+
     #add  3 args x y for map placement
     #and the map itself/ in order to draw attacks on both maps
-    def draw_attacks_on_map(self, screen):
+    def draw_attacks_client_map(self, screen, top, left, list):
         for row in range(10):
             for column in range(10):
-                if self.attack_map_list[row][column] == HIT:
-                    temp_x =  1265 + column * 60
-                    temp_y = 210 + row * 60
-                    screen.blit(base_font.render("X", True, RGB_GREEN), (temp_x, temp_y))
-                elif self.attack_map_list[row][column] == MISS:
-                    temp_x =  1265 + column * 60
-                    temp_y = 210 + row * 60
+                if list[row][column] == MISS:
+                    temp_x =  left + column * 60
+                    temp_y = top + row * 60
+                    screen.blit(base_font.render("X", True, RGB_GRAY), (temp_x, temp_y))
+                elif list[row][column] < 0:
+                    temp_x =  left + column * 60
+                    temp_y = top + row * 60
                     screen.blit(base_font.render("X", True, RGB_RED), (temp_x, temp_y))
+
+    def draw_attacks_attack_map(self, screen, top, left, list):
+        for row in range(10):
+            for column in range(10):
+                if list[row][column] == HIT:
+                    temp_x =  left + column * 60
+                    temp_y = top + row * 60
+                    screen.blit(base_font.render("X", True, RGB_GREEN), (temp_x, temp_y))
+                elif list[row][column] == MISS:
+                    temp_x =  left + column * 60
+                    temp_y = top + row * 60
+                    screen.blit(base_font.render("X", True, RGB_GRAY), (temp_x, temp_y))
 
 
     def look_for_collisions(self, ship, screen):

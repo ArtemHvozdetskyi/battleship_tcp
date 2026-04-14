@@ -9,6 +9,7 @@ import random
 
 # set later to custom input
 host = socket.gethostbyname(socket.gethostname())
+
 PORT = 51005
 SERVER_PASSWORD = 'gg'
 
@@ -153,23 +154,56 @@ def submit_map(client, client_data, index):
 def toss_coin():
     return random.randint(0,1)
 
-def get_opponent_map(client_index):
-    global players
+def get_opponent_index(client_index):
     if client_index == 0:
-        return players[1]
+        return 1
     else:
-        return players[0]
+        return 0
 
 #attack handle
 def client_attack(client_data, index):
+    global players
+    switching = True
+    opponent_index = get_opponent_index(index)
+    attack_row = client_data['attack_row']
+    attack_column = client_data['attack_column']
 
-    opponent_data = get_opponent_map(index)
-    print(client_data['attack_row'], client_data['attack_column'])
+    if players[opponent_index]['client_map'][attack_row][attack_column] > 0: 
+        #hit
+        print('hit')
+        switching = False
+        #client block
+        players[index]['attack_map'][attack_row][attack_column] = HIT
+        
+
+        #opponent block       
+        
+        tmp = players[opponent_index]['client_map'][attack_row][attack_column]
+        players[opponent_index]['client_map'][attack_row][attack_column] = -tmp
+
+        #calculations
+        calculate_current_ship(opponent_index, attack_row, attack_column)
+
+
+    else:
+        players[index]['attack_map'][attack_row][attack_column] = MISS
+        players[opponent_index]['client_map'][attack_row][attack_column] = MISS
+        
+
+
     #calculations
+    if check_for_winner(opponent_index):
+        #broadcast winner
 
-    #if user hits target then no switch
-    print('switching sides ')
-    switch_turn()
+        print("game ended")
+    else:
+        print('game not ended')
+    
+    #switch logic
+    if switching:
+        print('switching sides ')
+        switch_turn()
+
     broadcast_data()
 
 def switch_turn():
@@ -183,7 +217,150 @@ def switch_turn():
         players[0]['client_turn'] = True
         players[1]['client_turn'] = False
 
+def check_for_winner(opponent_index):
+    opponent_map = players[opponent_index]['client_map']
+    for row in range(10):
+        for column in range(10):
+            if opponent_map[row][column] > 0 and opponent_map[row][column] < 5:
+                return False
+    else:
+        return True
 
+
+def calculate_current_ship(index, row, column):
+    top_row, bottom_row, left_col, right_col = locate_current_ship(index, row, column)
+    if not is_ship_alive(index, top_row, bottom_row, left_col, right_col):
+        #all area around ship must be miss
+        print('ship dead')
+        attack_area(index, top_row, bottom_row, left_col, right_col)
+    else:
+        print('Ship alive')
+
+
+def attack_area(index, top_row, bottom_row, left_col, right_col): 
+    global players
+    opponent_index = get_opponent_index(index)
+
+    top_boundary = top_row if (top_row - 1) < 0 else (top_row - 1)
+    bottom_boundary = bottom_row if (bottom_row + 1) > 9 else (bottom_row + 1)
+
+    left_boundary = left_col if (left_col - 1) < 0 else (left_col - 1)
+
+    right_boundary = right_col if (right_col + 1) > 9 else (right_col + 1)
+
+    print(f"top boundary: {top_boundary}")
+    print(f"bottom boundary: {bottom_boundary}")
+    print(f"left boundary: {left_boundary}")
+    print(f"right boundary: {right_boundary}")
+    print()
+
+    for row in range(top_boundary, bottom_boundary+1):
+        for col in range(left_boundary, right_boundary+1):
+            if players[index]['client_map'][row][col] == 0:
+                players[index]['client_map'][row][col] = MISS
+                players[opponent_index]['attack_map'][row][col] = MISS
+                print(f" M", end='')
+            else:
+                print(f" {players[index]['client_map'][row][col]}", end='')
+        print()
+
+    
+
+#works
+def is_ship_alive(index, top_row, bottom_row, left_col, right_col):
+    global players
+    map = players[index]['client_map']
+    for row in range(top_row, bottom_row + 1):
+        for col in range(left_col, right_col + 1):
+            if map[row][col] > 0 and map[row][col] < 5:
+                return True
+    return False
+
+#works
+def locate_current_ship(player_index, row, column):
+    global players
+    map = players[player_index]['client_map']
+    element = map[row][column]
+    if abs(element) == 1:
+        return row, row, column, column
+    else:
+        top_row, bottom_row = look_vertical(map, row, column, abs(map[row][column]))
+        left_col, right_col = look_horizontal(map, row, column, abs(map[row][column]))
+        return top_row, bottom_row, left_col, right_col
+
+
+#works
+def look_vertical(map, row, column, ship_type):
+    #look upper elements
+    top_row, bottom_row = row, row
+    for temp in range(1, ship_type):
+        if (row - temp) >= 0:
+            if abs(map[row - temp][column]) == ship_type:
+                top_row = row-temp
+            else:
+                break
+        else:
+            break
+    #bottom of ship
+    for temp in range(1, ship_type):
+        if (row + temp) <= 9:
+            if abs(map[row+temp][column]) == ship_type:
+                bottom_row = row+temp
+            else:
+                break
+        else:
+            break
+        #check if row-1 is out of boundary
+    print(f"top of ship: {top_row}")
+    print(f"bottom of ship: {bottom_row}")
+    return top_row, bottom_row
+    
+
+def look_horizontal(map, row, column, ship_type):
+    left_col, right_col = column, column
+    #left
+    for temp in range(1, ship_type):
+        if (column - temp) >= 0:
+            if abs(map[row][column - temp]) == ship_type:
+                left_col = column-temp
+            else:
+                break
+        else:
+            break
+    #bottom of ship
+    for temp in range(1, ship_type):
+        if (column + temp) <= 9:
+            if abs(map[row][column + temp]) == ship_type:
+                right_col = column+temp
+            else:
+                break
+        else:
+            break
+    print(f"left of ship: {left_col}")
+    print(f"right of ship: {right_col}")
+    return left_col, right_col
+
+
+
+
+def broadcase_winner(winner_id):
+    winner_nickname = players[winner_id]['nickname']
+    for client in clients:
+        send_data(client, winner_nickname)
+        
+
+def broadcast_data():
+    global clients, players
+    for player in players:
+        index = player['id']
+        send_data(clients[index], player)
+
+
+def send_data(client, data):
+    json_str = json.dumps(data)
+    message = json_str.encode('utf-8')
+    message_size = len(message).to_bytes(4, "big")
+    client.send(message_size + message)
 
 
 def receive_data(client):
@@ -209,29 +386,8 @@ def receive_data(client):
     
     
 
-def broadcast_data():
-    global clients, players
-    for player in players:
-        index = player['id']
-        send_data(clients[index], player)
 
-
-def send_data(client, data):
-    global players
-    json_str = json.dumps(data)
-    message = json_str.encode('utf-8')
-    message_size = len(message).to_bytes(4, "big")
-    client.send(message_size + message)
-
-
-
-# def print_play_map():
-#     global players
-#     cl_map = players[0]['client_map']
-#     for row in range(10):
-#         for column in range(10):
-#             print(cl_map[row][column], end = '  ')
-#         print()
 
 
 start_server()
+
