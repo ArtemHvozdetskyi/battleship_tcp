@@ -154,29 +154,6 @@ def add_new_player(client, number):
         send_data(client, players[number-1])
     
 
-# def add_new_player(client, number):
-#     # make player instance here and append it to players
-#     global players, clients
-#     data = client.recv(1024)
-#     json_str = data.decode('utf-8')
-#     client_data = json.loads(json_str)
-
-#     void_map = [ [0]*10 for i in range(10) ]
-
-#     players.append({'id' : (number-1), 'waiting' : True, 'client_turn' : False, 'nickname' : client_data['nickname'], 'enemy' : '','client_map' : void_map, 'attack_map' : void_map, 'attack_row' : -1, 'attack_column' : -1})
-#     if number == 2:
-#         print("2 players setting waiting to false")
-#         #starting placing ships at this point
-#         #in game
-#         players[0]['waiting'] = False
-#         players[0]['enemy'] = players[1]['nickname']
-#         players[1]['waiting'] = False
-#         players[1]['enemy'] = players[0]['nickname']
-#         broadcast_data()
-#     else:
-#         send_data(client, players[number-1])
-    
-
 #main method to process clients
 def handle_client(client):
     global players, submits, clients
@@ -416,7 +393,7 @@ def prep_data(player_turn = None, attack_point = None, wait_status):
     if attack_point != None:
         pass
     if wait_status != None:
-        data['w']
+        data['wait_status'] = wait_status
     return data
 
 def broadcast_data(broadcast_type):
