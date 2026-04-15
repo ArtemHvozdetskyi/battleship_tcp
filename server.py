@@ -34,14 +34,13 @@ players = []
 # no need more for this1
 
 class Player:
-    def __init__(self, id, wait_status, player_turn, nickname, player_map, player_attack_map, connection):
+    def __init__(self, id, player_turn, nickname, player_map, connection):
         self._id = id
         self._wait_status = wait_status
         self._player_turn = player_turn
         self._nickname = nickname
         self._enemy = ''
         self._player_map = player_map
-        self._player_attack_map = player_attack_map
         self._connection = connection
 
     @property
@@ -52,11 +51,22 @@ class Player:
     def nickname(self, value):
         self._nickname = value
 
-    def set_enemy_nickname(self, nickname):
+    @property
+    def enemy(self):
+        return self._enemy 
+
+    @enemy.setter
+    def enemy(self, nickname):
         self._enemy = nickname
+    
+
 
     def set_waiting_status(self, status):
-        self._waiting_status = status
+        self._wait_status = status
+
+    @property
+    def wait_status(self):
+        return self._wait_status
 
     def get_connection(self):
         return self._connection
@@ -115,7 +125,7 @@ def add_new_player(client, number):
     json_str = data.decode('utf-8')
     client_data = json.loads(json_str)
 
-    void_map = [ [0]*10 for i in range(10) ]
+    void_map = [ [0 for column in range(10)] for row in range(10) ]
 
     new_player = Player(
         id = (number-1),
@@ -123,7 +133,6 @@ def add_new_player(client, number):
         player_turn = False,
         nickname = client_data['nickname'],
         player_map = void_map,
-        player_attack_map = void_map,
         connection = client
     )
     players.append(new_player)
@@ -139,6 +148,7 @@ def add_new_player(client, number):
         players[0].set_enemy_nickname(second_player_nick)
         players[1].set_enemy_nickname(first_player_index)
 
+        broadcast_data("game start")
         # broadcast_data()
     else:
         send_data(client, players[number-1])
@@ -396,11 +406,28 @@ def look_horizontal(map, row, column, ship_type):
         right_col = column+temp
     return left_col, right_col
 
-def broadcast_data():
-    global clients, players
+
+#sending methods
+
+def prep_data(player_turn = None, attack_point = None, wait_status):
+    data = {}
+    if player_turn != None:
+        data["player_turn"] = player_turn
+    if attack_point != None:
+        pass
+    if wait_status != None:
+        data['w']
+    return data
+
+def broadcast_data(broadcast_type):
+    global players
+    data = {}
     for player in players:
-        index = player['id']
-        send_data(clients[index], player)
+        match (broadcast_type):
+            case "game start":
+                break
+        client = player.get_connection()
+        send_data(client, player)
 
 # def broadcast_data():
 #     global clients, players
