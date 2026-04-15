@@ -33,6 +33,38 @@ clients = []
 players = []
 # no need more for this1
 
+class Player:
+    def __init__(self, id, wait_status, player_turn, nickname, player_map, player_attack_map, connection):
+        self._id = id
+        self._wait_status = wait_status
+        self._player_turn = player_turn
+        self._nickname = nickname
+        self._enemy = ''
+        self._player_map = player_map
+        self._player_attack_map = player_attack_map
+        self._connection = connection
+
+    @property
+    def nickname(self):
+        return self._nickname
+
+    @nickname.setter
+    def nickname(self, value):
+        self._nickname = value
+
+    def set_enemy_nickname(self, nickname):
+        self._enemy = nickname
+
+    def set_waiting_status(self, status):
+        self._waiting_status = status
+
+    def get_connection(self):
+        return self._connection
+
+    def set_connection(self, value):
+        self._connection = value
+
+
 #main func
 def start_server():
     print("Server started")
@@ -45,17 +77,12 @@ def receive_player():
     count = 1
     try:
         while running:
-            #display info about connection
             client, address = server.accept()
-            # print(f"received connection from : {client, address}")
             client_pass = client.recv(1024).decode('utf-8')
-            #if password is right 
-            #client can proceed
             if SERVER_PASSWORD == client_pass:
-                print("pass is right")
+                print("Player entered right password")
                 #adding only two players, no more
                 if count < 3:
-                    #send Nick if player conn accepted
                     client.send("Nick".encode('utf-8'))
                     clients.append(client)
                     print(f"player {count} connected")
@@ -80,27 +107,64 @@ def receive_player():
             client.close()
         sys.exit(0)
 
-
 def add_new_player(client, number):
+    # make player instance here and append it to players
     global players, clients
+    
     data = client.recv(1024)
     json_str = data.decode('utf-8')
     client_data = json.loads(json_str)
 
     void_map = [ [0]*10 for i in range(10) ]
 
-    players.append({'id' : (number-1), 'waiting' : True, 'client_turn' : False, 'nickname' : client_data['nickname'], 'enemy' : '','client_map' : void_map, 'attack_map' : void_map, 'attack_row' : -1, 'attack_column' : -1})
+    new_player = Player(
+        id = (number-1),
+        wait_status = True,
+        player_turn = False,
+        nickname = client_data['nickname'],
+        player_map = void_map,
+        player_attack_map = void_map,
+        connection = client
+    )
+    players.append(new_player)
+    #two players connected
     if number == 2:
-        print("2 players setting waiting to false")
-        #starting placing ships at this point
-        #in game
-        players[0]['waiting'] = False
-        players[0]['enemy'] = players[1]['nickname']
-        players[1]['waiting'] = False
-        players[1]['enemy'] = players[0]['nickname']
-        broadcast_data()
+        print('now both players can make their maps')
+        #change
+        for player in players:
+            player.set_waiting_status(False)
+        #gettin nicks
+        first_player_nick = players[0].nickname
+        second_player_nick = players[1].nickname
+        players[0].set_enemy_nickname(second_player_nick)
+        players[1].set_enemy_nickname(first_player_index)
+
+        # broadcast_data()
     else:
         send_data(client, players[number-1])
+    
+
+# def add_new_player(client, number):
+#     # make player instance here and append it to players
+#     global players, clients
+#     data = client.recv(1024)
+#     json_str = data.decode('utf-8')
+#     client_data = json.loads(json_str)
+
+#     void_map = [ [0]*10 for i in range(10) ]
+
+#     players.append({'id' : (number-1), 'waiting' : True, 'client_turn' : False, 'nickname' : client_data['nickname'], 'enemy' : '','client_map' : void_map, 'attack_map' : void_map, 'attack_row' : -1, 'attack_column' : -1})
+#     if number == 2:
+#         print("2 players setting waiting to false")
+#         #starting placing ships at this point
+#         #in game
+#         players[0]['waiting'] = False
+#         players[0]['enemy'] = players[1]['nickname']
+#         players[1]['waiting'] = False
+#         players[1]['enemy'] = players[0]['nickname']
+#         broadcast_data()
+#     else:
+#         send_data(client, players[number-1])
     
 
 #main method to process clients
@@ -155,10 +219,7 @@ def toss_coin():
     return random.randint(0,1)
 
 def get_opponent_index(client_index):
-    if client_index == 0:
-        return 1
-    else:
-        return 0
+    return 0 if client_index == 1 else 1
 
 #attack handle
 def client_attack(client_data, index):
@@ -226,6 +287,10 @@ def check_for_winner(opponent_index):
     else:
         return True
 
+def broadcase_winner(winner_id):
+    winner_nickname = {"winner" : players[winner_id]['nickname']} 
+    for client in clients:
+        send_data(client, winner_nickname)
 
 def calculate_current_ship(index, row, column):
     top_row, bottom_row, left_col, right_col = locate_current_ship(index, row, column)
@@ -291,69 +356,57 @@ def locate_current_ship(player_index, row, column):
 
 #works
 def look_vertical(map, row, column, ship_type):
-    #look upper elements
+    #upper
+    if map == None:
+        raise ValueError
     top_row, bottom_row = row, row
     for temp in range(1, ship_type):
-        if (row - temp) >= 0:
-            if abs(map[row - temp][column]) == ship_type:
-                top_row = row-temp
-            else:
-                break
-        else:
+        if (row - temp) < 0:
             break
-    #bottom of ship
+        if abs(map[row - temp][column]) != ship_type:
+            break
+        top_row = row-temp
+    #bottom
     for temp in range(1, ship_type):
-        if (row + temp) <= 9:
-            if abs(map[row+temp][column]) == ship_type:
-                bottom_row = row+temp
-            else:
-                break
-        else:
+        if (row + temp) > 9:
             break
-        #check if row-1 is out of boundary
-    print(f"top of ship: {top_row}")
-    print(f"bottom of ship: {bottom_row}")
+        if abs(map[row+temp][column]) != ship_type:
+            break
+        bottom_row = row+temp
     return top_row, bottom_row
     
 
 def look_horizontal(map, row, column, ship_type):
+    if map == None:
+        raise ValueError
     left_col, right_col = column, column
     #left
     for temp in range(1, ship_type):
-        if (column - temp) >= 0:
-            if abs(map[row][column - temp]) == ship_type:
-                left_col = column-temp
-            else:
-                break
-        else:
+        if (column - temp) < 0:
             break
-    #bottom of ship
+        if abs(map[row][column - temp]) != ship_type:
+            break
+        left_col = column-temp
+    #right
     for temp in range(1, ship_type):
-        if (column + temp) <= 9:
-            if abs(map[row][column + temp]) == ship_type:
-                right_col = column+temp
-            else:
-                break
-        else:
+        if (column + temp) > 9:
             break
-    print(f"left of ship: {left_col}")
-    print(f"right of ship: {right_col}")
+        if abs(map[row][column + temp]) != ship_type:
+            break
+        right_col = column+temp
     return left_col, right_col
-
-
-
-
-def broadcase_winner(winner_id):
-    winner_nickname = players[winner_id]['nickname']
-    for client in clients:
-        send_data(client, winner_nickname)
-        
 
 def broadcast_data():
     global clients, players
     for player in players:
         index = player['id']
         send_data(clients[index], player)
+
+# def broadcast_data():
+#     global clients, players
+#     for player in players:
+#         index = player['id']
+#         send_data(clients[index], player)
 
 
 def send_data(client, data):
@@ -389,5 +442,6 @@ def receive_data(client):
 
 
 
-start_server()
+if __name__ == "__main__":
+    start_server()
 
