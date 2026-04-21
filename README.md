@@ -23,13 +23,22 @@ A multiplayer Battleship game implemented in Python using TCP sockets. Two playe
 ---
 
 ## 📂 Project Structure
-tcp-battleship/
-│
-├── server.py # Handles connections and game coordination
-├── client.py # Player client
-├── game.py # Game logic (board, ships, rules)
-├── utils.py # Helper functions
-└── README.md
+```
+.
+├── button.py
+├── game.py
+├── server_client.py
+├── server.py
+├── test_server.py
+├── text_input.py
+└── textures
+    ├── button.png
+    ├── right.png
+    ├── water_backgroudn.jpg
+    └── water.jpg
+
+
+```
 
 ---
 
