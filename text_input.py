@@ -53,5 +53,11 @@ class Text_Input():
         self.text_surface = self.font.render(self.text, True, (255, 255, 255))
         self.hover_rect.w = max(300, self.text_surface.get_width() + 10)
 
+    @staticmethod
+    def blit_input_element(input_element, pos_x, pos_y, screen):
+        if input_element.hovered_mouse():
+            input_element.draw(screen, pos_x, pos_y, pygame.event.get())
+        else:
+            input_element.draw(screen, pos_x, pos_y)
 
         
