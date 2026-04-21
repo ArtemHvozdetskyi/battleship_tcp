@@ -42,7 +42,7 @@ HIT = 111
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED)
 
-confirm_img = pygame.image.load('textures/right.png').convert_alpha()
+confirm_img = pygame.image.load('textures/button.png').convert_alpha()
 confirm_button = Button( confirm_img, 0.25)
 
 base_font = pygame.font.Font(None,64)
