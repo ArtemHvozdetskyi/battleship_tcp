@@ -23,7 +23,7 @@ class Client():
 
     def connect_to_server(self, server_ip, server_password, client_nickname):
         #connect
-        self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connection = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         self.connection.connect((server_ip, 51005))
 
         self.client_nickname = client_nickname
