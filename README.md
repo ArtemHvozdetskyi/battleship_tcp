@@ -10,7 +10,7 @@ A multiplayer Battleship game implemented in Python using TCP sockets. Two playe
 - Turn-based attack system
 - Grid-based ship placement
 - Hit/miss tracking
-- Simple terminal or graphical interface (depending on your implementation)
+- Simple graphical interface 
 
 ---
 
@@ -18,7 +18,7 @@ A multiplayer Battleship game implemented in Python using TCP sockets. Two playe
 
 - Python 3  
 - `socket` (TCP networking)  
-- Optional: `pygame` for GUI  
+- `pygame` for GUI  
 
 ---
 
@@ -29,18 +29,16 @@ A multiplayer Battleship game implemented in Python using TCP sockets. Two playe
 ├── game.py
 ├── server_client.py
 ├── server.py
-├── test_server.py
 ├── text_input.py
 └── textures
     ├── button.png
-    ├── right.png
-    ├── water_backgroudn.jpg
-    └── water.jpg
 
 
 ```
-
----
+## Instaling dependencies
+```bash
+pip install requirements.txt
+```
 
 ## 🚀 How to Run
 
@@ -48,23 +46,35 @@ A multiplayer Battleship game implemented in Python using TCP sockets. Two playe
 ```bash
 python server.py
 ```
-If playing over a network, update the server IP in client.py:
-```python
-HOST = "your.server.ip"
-PORT = 12345
+### 2. Start client
+
+```bash
+python game.py
 ```
-🎮 How to Play
-Each player places their ships on a grid
-Players take turns entering coordinates (e.g., A5, B7)
-The game reports:
-Hit 💥
-Miss 🌊
+# 🎮 How to Play
+Each player places their ships on a grid <br>
+Players take turns entering coordinates (e.g., A5, B7) <br>
+The game reports: <br>
+Hit 💥 <br>
+Miss 🌊 <br>
 First player to sink all enemy ships wins
-🌐 Networking Details
-Protocol: TCP
-Default Port: 12345
+## 🌐 Networking Details
+Protocol: TCP <br>
+Server IP: You  chose IPv6<br>
+Default Port: 51005 <br>
 One server, two clients
-Server manages:
-Turn order
-Game state
+## Server manages:
+Game state<br>
 Communication between players
+# 🐛 Issues
+
+If you find a bug, please open an issue describing the problem.
+
+# 📄 License
+
+This project is licensed under the MIT License.
+
+# 🙋‍♂️ Author
+
+Artem Hvozdetskyi <br>
+GitHub: 

@@ -1,5 +1,4 @@
 import pygame
-import numpy as np
 #my own classes
 from button import Button
 from text_input import Text_Input
